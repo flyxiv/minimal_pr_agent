@@ -16,13 +16,17 @@ RUN pip install --no-cache-dir \
     httpx==0.27.0 \
     PyGithub==2.4.0 \
     pydantic==2.7.1 \
-    requests==2.32.3
+    requests==2.32.3 \
+    pyyaml \
+    google-generativeai
 
 # Copy source
 COPY llm_pr_review_agent /app/llm_pr_review_agent
 COPY action.yml /app/action.yml
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
-RUN chmod +x /app/docker-entrypoint.sh
+RUN cd /app && chmod +x /app/docker-entrypoint.sh
+
+ENV PATH='/app:/bin:/usr:/usr/local/bin'
 
 # Default envs expected at runtime:
 # - GEMINI_API_KEY
@@ -31,4 +35,4 @@ RUN chmod +x /app/docker-entrypoint.sh
 # - MAX_RESPONSE_TOKENS (optional)
 # - REVIEW_CONTEXT_BYTES (optional)
 
-ENTRYPOINT ["/app/docker-entrypoint.sh"] 
+ENTRYPOINT ["docker-entrypoint.sh"] 
