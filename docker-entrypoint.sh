@@ -5,8 +5,8 @@ if [ -n "$MODEL" ] && [ -z "$LLM_MODEL" ]; then
   export LLM_MODEL="$MODEL"
 fi
 
-export GITHUB_TOKEN="${INPUT_GITHUB_TOKEN:-${GITHUB_TOKEN}}"
-export GEMINI_API_KEY="${INPUT_GEMINI_API_KEY:-${GEMINI_API_KEY}}"
+GITHUB_TOKEN=$(printenv "INPUT_GITHUB-TOKEN" || echo "")
+GEMINI_API_KEY=$(printenv "INPUT_GEMINI-API-KEY" || echo "")
 
 if [ -z "$GITHUB_TOKEN" ]; then
     echo "Error: GITHUB_TOKEN is required"
