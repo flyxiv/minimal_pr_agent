@@ -25,9 +25,8 @@ COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN chmod +x /app/docker-entrypoint.sh
 
 # Default envs expected at runtime:
-# - OPENAI_API_KEY
+# - GEMINI_API_KEY
 # - GITHUB_TOKEN
-# - LLM_MODEL (optional)
 # - LLM_TEMPERATURE (optional)
 # - MAX_RESPONSE_TOKENS (optional)
 # - REVIEW_CONTEXT_BYTES (optional)
