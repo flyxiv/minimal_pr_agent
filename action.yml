@@ -1,0 +1,21 @@
+name: 'Minimalistic AI PR Reviewer'
+description: 'Automatically review PRs using AI. Does the least to judge your code. Focus on the mistakes, not tastes'
+inputs:
+  openai-api-key:
+    description: 'OpenAI API Key'
+    required: true
+  github-token:
+    description: 'GitHub Token'
+    required: true
+  model:
+    description: 'OpenAI model to use'
+    required: false
+    default: 'gpt-5 (reasoning model)'
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  env:
+    OPENAI_API_KEY: ${{ inputs.openai-api-key }}
+    GITHUB_TOKEN: ${{ inputs.github-token }}
+    MODEL: ${{ inputs.model }}
