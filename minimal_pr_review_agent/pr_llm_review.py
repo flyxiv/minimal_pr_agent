@@ -9,8 +9,8 @@ from typing import List, Dict, Any
 from github import Github
 from github.PullRequest import PullRequest
 from pydantic import ValidationError
-from llm_pr_review_agent.pr_components import ReviewInputs, CodeReviewItem, CodeReviewOutput, FilePatch, ReviewCategory
-from llm_pr_review_agent.llm_request.request_gemini import request_gemini, GeminiModels 
+from minimal_pr_review_agent.pr_components import ReviewInputs, CodeReviewItem, CodeReviewOutput, FilePatch, ReviewCategory
+from minimal_pr_review_agent.llm_request.request_gemini import request_gemini, GeminiModels 
 
 DEFAULT_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.7"))
 MAX_RESPONSE_TOKENS = int(os.getenv("MAX_RESPONSE_TOKENS", "2000"))
