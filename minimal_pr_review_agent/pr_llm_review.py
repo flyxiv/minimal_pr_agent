@@ -18,26 +18,27 @@ REVIEW_CONTEXT_BYTES = int(os.getenv("REVIEW_CONTEXT_BYTES", "120000"))
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 
-def get_github_pr() -> PullRequest:
-    repo_full_name = os.getenv("GITHUB_REPOSITORY")
-    pr_number_str = os.getenv("PR_NUMBER")
+import argparse
 
-    if not repo_full_name:
-        # Local run: scripts/pr_llm_review.py <repo_full_name> <pr_number>
-        if len(sys.argv) < 3:
-            print("Usage (local): scripts/pr_llm_review.py <repo_full_name> <pr_number>")
-            sys.exit(2)
-        repo_full_name = sys.argv[1]
-        pr_number_str = sys.argv[2]
+def parse_args():
+    parser = argparse.ArgumentParser(description="Review a GitHub pull request using an LLM")
+    parser.add_argument("--repository", required=True, help="GitHub repository name (e.g. 'owner/repo')")
+    parser.add_argument("--pr-number", required=True, help="Pull request number")
+    return parser.parse_args()
+
+def get_github_pr(repository: str, pr_number: int) -> PullRequest:
+    if not repository:
+        print("Usage (local): scripts/pr_llm_review.py <repository> <pr_number>")
+        sys.exit(2)
 
     if not GITHUB_TOKEN:
         print("Missing GITHUB_TOKEN in env.")
         sys.exit(2)
 
     gh = Github(GITHUB_TOKEN)
-    repo = gh.get_repo(repo_full_name)
+    repo = gh.get_repo(repository)
 
-    if pr_number_str is None:
+    if pr_number is None:
         event_path = os.getenv("GITHUB_EVENT_PATH")
         if event_path and os.path.exists(event_path):
             with open(event_path, "r", encoding="utf-8") as f:
@@ -47,7 +48,7 @@ def get_github_pr() -> PullRequest:
             print("Could not determine PR number.")
             sys.exit(2)
     else:
-        pr_number = int(pr_number_str)
+        pr_number = int(pr_number)
 
     return repo.get_pull(pr_number)
 
@@ -143,11 +144,25 @@ def build_review_prompt(inputs: ReviewInputs) -> str:
     return guidelines + "\n\n" + pr_header
 
 
-async def call_llm_for_json(prompt: str) -> CodeReviewOutput:
+def call_llm_for_json(prompt: str) -> CodeReviewOutput:
     if not GEMINI_API_KEY:
         raise RuntimeError("GEMINI_API_KEY is required")
-    items = json.loads(request_gemini(GeminiModels.GEMINI_2_5_PRO, prompt).text)
-    return CodeReviewOutput(code_review=items)
+    response = request_gemini(GeminiModels.GEMINI_2_5_FLASH_LITE, prompt).text
+    items = json.loads(response)
+
+    review_items = []
+    
+    for item in items["code_review"]:
+        review_items.append(CodeReviewItem(
+            file=item["file"],
+            lines=item["lines"],
+            category=ReviewCategory(item["category"]),
+            comment=item["comment"],
+            suggestion=item["suggestion"]
+        ))
+    
+    return CodeReviewOutput(code_review=review_items)
+
 
 
 def group_review_comments_for_github(items: List[CodeReviewItem]) -> List[Dict[str, Any]]:
@@ -208,13 +223,12 @@ def submit_chunked_review(pr: PullRequest, comments: List[Dict[str, Any]], heade
 
 
 def main() -> None:
-    pr = get_github_pr()
+    args = parse_args()
+    pr = get_github_pr(args.repository, args.pr_number)
     inputs = collect_pr_context(pr)
     prompt = build_review_prompt(inputs)
 
-    import asyncio
-
-    llm_output = asyncio.run(call_llm_for_json(prompt))
+    llm_output = call_llm_for_json(prompt)
 
     changed_files = [f.filename for f in pr.get_files()]
     items = filter_items_to_changed_files(llm_output.code_review, changed_files)

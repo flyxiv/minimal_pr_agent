@@ -2,6 +2,9 @@ import yaml
 import google.generativeai as genai
 import os
 from enum import Enum
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Load API key from environment variable or config file
 def get_gemini_api_key():
@@ -28,6 +31,6 @@ def request_gemini(model: GeminiModels, prompt, image_url=None):
     if image_url:
         response = model.generate_content(prompt, image_url)
     else:
-        response = model.generate_content(prompt)
+        response = model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
 
     return response
